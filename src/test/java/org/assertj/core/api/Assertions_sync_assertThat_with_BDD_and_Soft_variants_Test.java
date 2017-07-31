@@ -12,9 +12,12 @@
  */
 package org.assertj.core.api;
 
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.lang.reflect.Method;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -30,6 +33,25 @@ public class Assertions_sync_assertThat_with_BDD_and_Soft_variants_Test extends 
 
     assertThat(thenMethods).usingElementComparator(IGNORING_DECLARING_CLASS_AND_METHOD_NAME)
                            .containsExactlyInAnyOrder(assertThatMethods);
+  }
+
+  @Test
+  public void standard_assertions_and_with_assertions_should_have_the_same_assertions_methods() {
+    Method[] assertionsMethods = findMethodsWithName(Assertions.class, "assertThat");
+    Method[] withAssertionsMethods = findMethodsWithName(WithAssertions.class, "assertThat");
+
+    assertThat(withAssertionsMethods).usingElementComparator(IGNORING_DECLARING_CLASS_ONLY)
+                                     .containsExactlyInAnyOrder(assertionsMethods);
+  }
+
+  @Test
+  public void standard_assertions_and_with_assertions_should_have_the_same_non_assertions_methods() {
+
+    Set<Method> nonAssertionsMethods = nonAssertionsMethodsOf(Assertions.class.getDeclaredMethods());
+    Set<Method> nonWithAssertionsMethods = nonAssertionsMethodsOf(WithAssertions.class.getDeclaredMethods());
+
+    assertThat(nonWithAssertionsMethods).usingElementComparator(IGNORING_DECLARING_CLASS_ONLY)
+                                        .containsExactlyInAnyOrderElementsOf(nonAssertionsMethods);
   }
 
   @Test
@@ -57,4 +79,9 @@ public class Assertions_sync_assertThat_with_BDD_and_Soft_variants_Test extends 
                            .containsExactlyInAnyOrder(thenSoftMethods);
 
   }
+
+  private static Set<Method> nonAssertionsMethodsOf(Method[] declaredMethods) {
+    return stream(declaredMethods).filter(method -> !method.getName().equals("assertThat")).collect(toSet());
+  }
+
 }
