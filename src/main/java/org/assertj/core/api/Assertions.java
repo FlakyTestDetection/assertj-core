@@ -789,8 +789,6 @@ public class Assertions {
   /**
    * Creates a new instance of <code>{@link ZonedDateTimeAssert}</code>.
    *
-   * @param <K> the type of keys in the map.
-   * @param <V> the type of values in the map.
    * @param actual the actual value.
    * @return the created assertion object.
    */
@@ -1030,19 +1028,19 @@ public class Assertions {
   }
 
   /**
-   * Allows to capture and then assert on a {@link Throwable} more easily when used with Java 8 lambdas.
-   *
+   * Allows to capture and then assert on a {@link Throwable} (easier done with lambdas).
    * <p>
    * Java 8 example :
    * <pre><code class='java'>  {@literal @}Test
    *  public void testException() {
    *    assertThatThrownBy(() -&gt; { throw new Exception("boom!") }).isInstanceOf(Exception.class)
-   *                                                               .hasMessageContaining("boom");
+   *                                                              .hasMessageContaining("boom");
    * }</code></pre>
    *
    * If the provided {@link ThrowingCallable} does not raise an exception, an error is immediately raised,
    * in that case the test description provided with {@link AbstractAssert#as(String, Object...) as(String, Object...)} is not honored.
    * To use a test description, use {@link #catchThrowable(ThrowableAssert.ThrowingCallable)} as shown below.
+   * 
    * <pre><code class='java'> // assertion will fail but "display me" won't appear in the error
    * assertThatThrownBy(() -&gt; { // do nothing }).as("display me").isInstanceOf(Exception.class);
    *
@@ -1051,7 +1049,7 @@ public class Assertions {
    * assertThat(thrown).as("display me").isInstanceOf(Exception.class); </code></pre>
    *
    * @param shouldRaiseThrowable The {@link ThrowingCallable} or lambda with the code that should raise the throwable.
-   * @return The captured exception or <code>null</code> if none was raised by the callable.
+   * @return the created {@link ThrowableAssert}.
    */
   @CheckReturnValue
   public static AbstractThrowableAssert<?, ? extends Throwable> assertThatThrownBy(ThrowingCallable shouldRaiseThrowable) {
@@ -1059,12 +1057,12 @@ public class Assertions {
   }
 
   /**
-   * Allows to capture and then assert on a {@link Throwable} more easily when used with Java 8 lambdas.
-   *
+   * Allows to capture and then assert on a {@link Throwable} (easier done with lambdas).
+   * <p>
+   * The main difference with {@link #assertThatThrownBy(ThrowingCallable) assertThatThrownBy} is that 
+   * this method does not fail if no exception was thrown.
    * <p>
    * Example :
-   * </p>
-   *
    * <pre><code class='java'> ThrowingCallable callable = () -> {
    *   throw new Exception("boom!");
    * };
@@ -1096,7 +1094,7 @@ public class Assertions {
    * This method was not named {@code assertThat} because the java compiler reported it ambiguous when used directly with a lambda :(  
    *
    * @param shouldRaiseOrNotThrowable The {@link ThrowingCallable} or lambda with the code that should raise the throwable.
-   * @return The captured exception or <code>null</code> if none was raised by the callable.
+   * @return the created {@link ThrowableAssert}.
    * @since 3.7.0
    */
   @CheckReturnValue
@@ -1794,7 +1792,9 @@ public class Assertions {
    * @param <T> Type of the property under the assertion
    * @return same instance of {@code extractor}
    */
-  public static <F, T> Function<F, T> from(Function<F, T> extractor) { return extractor; }
+  public static <F, T> Function<F, T> from(Function<F, T> extractor) {
+    return extractor;
+  }
 
   // ------------------------------------------------------------------------------------------------------
   // Condition methods : not assertions but here to have a single entry point to all AssertJ features.
