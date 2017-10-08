@@ -2,8 +2,8 @@ language: java
 script:
   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then mvn clean verify; fi'
   - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar; fi'
-
 sudo: false
+install: true
 
 addons:
   apt:
@@ -15,6 +15,12 @@ addons:
       secure: "Svc3I0+xanky2eevj9/K6uy3otjAZXOjV9VNRC2PAbLCxmMHAos4ccUj6UOdxM8fvRhPMESPp2u3R04/2n6NZFqFUEhlS07OyhRu5qh3HWVAtTenv7enSwS97DzGtRtjg7y9eKraiZUoShaNbx1rEGPd7hWQKwi4UgEQgqfhW75PCynKnwrz5LKKGxE6a0J+bluoEB/XE5hEDyWlzD9lQ17GyyRvAQ4hQL5xqu+h2xB8BJ/qtrvNQfUJHJiW6P4GFDU417h+goDvhEzxV6DC0KEsZVK2iTSmPYx27bSxwaVvT4LMcqxesa/Dbt8DW5ZSiv1U3q9caD3frMc7Fh6Q8SQxpEI21iTu53ErvH3Meb6LneOu92RSJYhmw95uvrAJj04LodbUPCDWlYGdoreMYseuQIeqGS3RLtDnwdf6Y4jJZlJCQEJfjJZ7bFYHVYH2ylTysPJv7stUPc1vW/3r0W7DoMZjLL/mHj3miNpQVHDc58WdNnc1U00/XRA0OSYD4M7C9RAGVESYXtNzzi8HYAZjZETaJm82o1TCLU0L8ufDJ4GZAi+OZhgMFA3Zaa0rVPH8YIYQ/gPVWj9grBOKcuCQ4ZSRLueqZnXrASfX2m0tLcp6CQAXrt2CQokX1bHzF7pYFuC1ijenFkIfL3Dwo/Bk7OhnEU0KF7qxa18ivg8="
     branches:
       - master
+
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+    - '$HOME/.sonar/cache'
 
 jdk:  
    - oraclejdk8
