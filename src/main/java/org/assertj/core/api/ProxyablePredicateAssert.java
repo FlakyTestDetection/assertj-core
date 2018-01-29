@@ -20,11 +20,10 @@ import java.util.function.Predicate;
  * @author Gaël LHEZ
  * @since 3.5.2
  */
-public class SoftAssertionPredicateAssert<T>
-    extends AbstractPredicateAssert<SoftAssertionPredicateAssert<T>, T> {
+public class ProxyablePredicateAssert<T> extends AbstractPredicateAssert<ProxyablePredicateAssert<T>, T> {
 
-  public SoftAssertionPredicateAssert(Predicate<T> actual) {
-    super(actual, SoftAssertionPredicateAssert.class);
+  public ProxyablePredicateAssert(Predicate<T> actual) {
+    super(actual, ProxyablePredicateAssert.class);
   }
 
 }

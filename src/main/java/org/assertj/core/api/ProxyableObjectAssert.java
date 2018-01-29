@@ -13,23 +13,24 @@
 package org.assertj.core.api;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Concrete assertions for {@link List}s without any final methods to allow proxying.
- * 
- * @author Gaël LHEZ
- * @since 2.5.1 / 3.5.1
+ * Concrete assertions for {@link Object}s without any final methods to allow proxying.
  */
-public class SoftAssertionListAssert<ELEMENT> extends
-    FactoryBasedNavigableListAssert<SoftAssertionListAssert<ELEMENT>, List<? extends ELEMENT>, ELEMENT, ObjectAssert<ELEMENT>> {
+public class ProxyableObjectAssert<ACTUAL> extends AbstractObjectAssert<ProxyableObjectAssert<ACTUAL>, ACTUAL> {
 
-  public SoftAssertionListAssert(List<? extends ELEMENT> actual) {
-    super(actual, SoftAssertionListAssert.class, new ObjectAssertFactory<ELEMENT>());
+  public ProxyableObjectAssert(ACTUAL actual) {
+    super(actual, ProxyableObjectAssert.class);
+  }
+  
+  public ProxyableObjectAssert(AtomicReference<ACTUAL> actual) {
+    this(actual == null ? null: actual.get());
   }
 
   @Override
-  protected <ELEMENT2> AbstractListAssert<?, List<? extends ELEMENT2>, ELEMENT2, ObjectAssert<ELEMENT2>> newListAssertInstance(List<? extends ELEMENT2> newActual) {
-    return new SoftAssertionListAssert<>(newActual);
+  protected <ELEMENT> AbstractListAssert<?, List<? extends ELEMENT>, ELEMENT, ObjectAssert<ELEMENT>> newListAssertInstance(List<? extends ELEMENT> newActual) {
+    return new ProxyableListAssert<>(newActual);
   }
 
 }

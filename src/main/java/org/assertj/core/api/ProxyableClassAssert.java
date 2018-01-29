@@ -16,10 +16,10 @@ package org.assertj.core.api;
 /**
  * Concrete assertions for {@link Class}s without any final methods to allow proxying.
  */
-public class SoftAssertionClassAssert extends AbstractClassAssert<SoftAssertionClassAssert> {
+public class ProxyableClassAssert extends AbstractClassAssert<ProxyableClassAssert> {
 
-  public SoftAssertionClassAssert(Class<?> actual) {
-    super(actual, SoftAssertionClassAssert.class);
+  public ProxyableClassAssert(Class<?> actual) {
+    super(actual, ProxyableClassAssert.class);
   }
   
 }

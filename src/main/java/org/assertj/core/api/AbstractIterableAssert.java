@@ -130,7 +130,7 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * Create a friendly soft or "hard" assertion.
    * <p>
    * Implementations need to redefine it so that some methods, such as {@link #extracting(Extractor)}, are able
-   * to build the appropriate list assert (eg: {@link ListAssert} versus {@link SoftAssertionListAssert}).
+   * to build the appropriate list assert (eg: {@link ListAssert} versus {@link ProxyableListAssert}).
    * <p>
    * The default implementation will assume that this concrete implementation is NOT a soft assertion.
    *
@@ -139,7 +139,6 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * @return a new {@link AbstractListAssert}.
    */
   protected <E> AbstractListAssert<?, List<? extends E>, E, ObjectAssert<E>> newListAssertInstance(List<? extends E> newActual) {
-    // this might not be the best implementation (SoftAssertion needs to override this).
     return new ListAssert<>(newActual);
   }
 
@@ -1350,13 +1349,12 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * @return a new assertion object whose object under test is a flattened list of all extracted values.
    */
   @CheckReturnValue
-  @SafeVarargs
-  public final ListAssert<Object> flatExtracting(Extractor<? super ELEMENT, ?>... extractors) {
+  public AbstractListAssert<?, List<? extends Object>, Object, ObjectAssert<Object>> flatExtracting(@SuppressWarnings("unchecked") Extractor<? super ELEMENT, ?>... extractors) {
     Stream<? extends ELEMENT> actualStream = stream(actual.spliterator(), false);
     List<Object> result = actualStream.flatMap(element -> Stream.of(extractors)
                                                                 .map(extractor -> extractor.extract(element)))
                                       .collect(Collectors.toList());
-    return new ListAssert<>(result);
+    return newListAssertInstance(result);
   }
 
   /**
@@ -1395,13 +1393,12 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * @since 3.7.0
    */
   @CheckReturnValue
-  @SafeVarargs
-  public final <EXCEPTION extends Exception> ListAssert<Object> flatExtracting(ThrowingExtractor<? super ELEMENT, ?, EXCEPTION>... extractors) {
+  public <EXCEPTION extends Exception> AbstractListAssert<?, List<? extends Object>, Object, ObjectAssert<Object>> flatExtracting(@SuppressWarnings("unchecked") ThrowingExtractor<? super ELEMENT, ?, EXCEPTION>... extractors) {
     Stream<? extends ELEMENT> actualStream = stream(actual.spliterator(), false);
     List<Object> result = actualStream.flatMap(element -> Stream.of(extractors)
                                                                 .map(extractor -> extractor.extract(element)))
                                       .collect(Collectors.toList());
-    return new ListAssert<>(result);
+    return newListAssertInstance(result);
   }
 
   /**
@@ -1506,15 +1503,14 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * @return a new assertion object whose object under test is the list of Tuples containing the extracted values.
    */
   @CheckReturnValue
-  @SafeVarargs
-  public final ListAssert<Tuple> extracting(Function<ELEMENT, ?>... extractors) {
+  public AbstractListAssert<?, List<? extends Tuple>, Tuple, ObjectAssert<Tuple>> extracting(@SuppressWarnings("unchecked") Function<ELEMENT, ?>... extractors) {
     // combine all extractors into one function
     Function<ELEMENT, Tuple> tupleExtractor = objectToExtractValueFrom -> new Tuple(Stream.of(extractors)
                                                                                           .map(extractor -> extractor.apply(objectToExtractValueFrom))
                                                                                           .toArray());
     List<Tuple> tuples = stream(actual.spliterator(), false).map(tupleExtractor)
                                                             .collect(toList());
-    return new ListAssert<>(tuples);
+    return newListAssertInstance(tuples).as(info.description());
   }
 
   /**
@@ -2080,9 +2076,11 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    */
   @CheckReturnValue
   public AbstractListAssert<?, List<? extends ELEMENT>, ELEMENT, ObjectAssert<ELEMENT>> filteredOnNull(String propertyOrFieldName) {
-    // need to cast nulll to Object otherwise it calls :
-    // filteredOn(String propertyOrFieldName, FilterOperation<?> filterOperation)
-    return filteredOn(propertyOrFieldName, (Object) null);
+    // can't call filteredOn(String propertyOrFieldName, null) as it does not work with soft assertions proxying
+    // mechanism, it would lead to double proxying which is not handle properly (improvements needed in our proxy mechanism)
+    Filters<? extends ELEMENT> filter = filter((Iterable<? extends ELEMENT>) actual);
+    Iterable<? extends ELEMENT> filteredIterable = filter.with(propertyOrFieldName, null).get();
+    return newListAssertInstance(newArrayList(filteredIterable));
   }
 
   /**
@@ -2237,6 +2235,8 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * // assertion fails
    * assertThat(hobbits, StringAssert.class).first()
    *                                        .startsWith("pip");</code></pre>
+   * <p>
+   * <b>Warning: this method does not work with soft assertions or assumptions.</b> 
    *
    * @return the assertion on the first element
    * @throws AssertionError if the actual {@link Iterable} is empty.
@@ -2284,6 +2284,8 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * // assertion fails
    * assertThat(hobbits, StringAssert.class).last()
    *                                        .startsWith("fro");</code></pre>
+   * <p>
+   * <b>Warning: this method does not work with soft assertions or assumptions.</b> 
    *
    * @return the assertion on the first element
    * @throws AssertionError if the actual {@link Iterable} is empty.
@@ -2344,6 +2346,8 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    * // assertion fails
    * assertThat(hobbits, StringAssert.class).element(1)
    *                                        .startsWith("fro");</code></pre>
+   * <p>
+   * <b>Warning: this method does not work with soft assertions or assumptions.</b> 
    *
    * @param index the element's index
    * @return the assertion on the given element
@@ -2404,7 +2408,7 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    */
   public AbstractListAssert<?, List<? extends ELEMENT>, ELEMENT, ObjectAssert<ELEMENT>> filteredOn(Predicate<? super ELEMENT> predicate) {
     checkArgument(predicate != null, "The filter predicate should not be null");
-    return new ListAssert<>(stream(actual.spliterator(), false).filter(predicate).collect(toList()));
+    return newListAssertInstance(stream(actual.spliterator(), false).filter(predicate).collect(toList()));
   }
 
   /**
@@ -2683,6 +2687,8 @@ public abstract class AbstractIterableAssert<SELF extends AbstractIterableAssert
    *
    * // assertion will fail:
    * assertThat(elvesRings).size().isGreaterThan(3);</code></pre>
+   * <p>
+   * <b>Warning: this method does not work with soft assertions or assumptions.</b> 
    *
    * @return AbstractIterableSizeAssert built with the {@code Iterable}'s size.
    * @throws NullPointerException if the given {@code Iterable} is {@code null}.

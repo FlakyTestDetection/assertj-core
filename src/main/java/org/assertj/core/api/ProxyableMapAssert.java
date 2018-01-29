@@ -12,15 +12,21 @@
  */
 package org.assertj.core.api;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * Concrete assertions for {@link Map}s without any final methods to allow proxying.
  */
-public class SoftAssertionMapAssert<KEY, VALUE> extends AbstractMapAssert<SoftAssertionMapAssert<KEY, VALUE>, Map<KEY, VALUE>, KEY, VALUE> {
+public class ProxyableMapAssert<KEY, VALUE> extends AbstractMapAssert<ProxyableMapAssert<KEY, VALUE>, Map<KEY, VALUE>, KEY, VALUE> {
 
-  public SoftAssertionMapAssert(Map<KEY, VALUE> actual) {
-    super(actual, SoftAssertionMapAssert.class);
+  public ProxyableMapAssert(Map<KEY, VALUE> actual) {
+    super(actual, ProxyableMapAssert.class);
+  }
+
+  @Override
+  protected <ELEMENT> AbstractListAssert<?, List<? extends ELEMENT>, ELEMENT, ObjectAssert<ELEMENT>> newListAssertInstance(List<? extends ELEMENT> newActual) {
+    return new ProxyableListAssert<>(newActual);
   }
 
 }

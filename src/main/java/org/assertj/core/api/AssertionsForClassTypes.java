@@ -272,7 +272,7 @@ public class AssertionsForClassTypes {
    * @return the created assertion object.
    */
   @CheckReturnValue
-  public static AbstractClassAssert<?> assertThat(Class<?> actual) {
+  public static ClassAssert assertThat(Class<?> actual) {
     return new ClassAssert(actual);
   }
 
@@ -438,7 +438,7 @@ public class AssertionsForClassTypes {
    * @return the created assertion object.
    */
   @CheckReturnValue
-  public static <T> AbstractObjectAssert<?, T> assertThat(T actual) {
+  public static <T> ObjectAssert<T> assertThat(T actual) {
     return new ObjectAssert<>(actual);
   }
 
@@ -450,7 +450,7 @@ public class AssertionsForClassTypes {
    * @return the created assertion object.
    */
   @CheckReturnValue
-  public static <T> AbstractObjectArrayAssert<?, T> assertThat(T[] actual) {
+  public static <T> ObjectArrayAssert<T> assertThat(T[] actual) {
     return new ObjectArrayAssert<>(actual);
   }
 

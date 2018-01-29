@@ -12,18 +12,25 @@
  */
 package org.assertj.core.api;
 
-import static org.assertj.core.util.Arrays.array;
+import static net.bytebuddy.matcher.ElementMatchers.nameContainsIgnoreCase;
 
-import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import net.sf.cglib.proxy.Callback;
-import net.sf.cglib.proxy.CallbackFilter;
-import net.sf.cglib.proxy.Enhancer;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.TypeCache;
+import net.bytebuddy.TypeCache.SimpleKey;
+import net.bytebuddy.TypeCache.Sort;
+import net.bytebuddy.description.method.MethodDescription;
+import net.bytebuddy.implementation.MethodDelegation;
+import net.bytebuddy.matcher.ElementMatcher.Junction;
+import net.bytebuddy.matcher.ElementMatchers;
 
 class SoftProxies {
 
   private final ErrorCollector collector = new ErrorCollector();
+  private final TypeCache<TypeCache.SimpleKey> cache = new TypeCache.WithInlineExpunction<>(Sort.SOFT);
 
   void collectError(Throwable error) {
     collector.addError(error);
@@ -34,50 +41,39 @@ class SoftProxies {
   }
 
   @SuppressWarnings("unchecked")
-  <V, T> V create(Class<V> assertClass, Class<T> actualClass, T actual) {
-    Enhancer enhancer = new Enhancer();
-    enhancer.setSuperclass(assertClass);
-    enhancer.setCallbackFilter(CollectErrorsOrCreateExtractedProxy.FILTER);
-    enhancer.setCallbacks(new Callback[] { collector, new ProxifyExtractingResult(this) });
-    return (V) enhancer.create(array(actualClass), array(actual));
+  <V, T> V create(final Class<V> assertClass, Class<T> actualClass, T actual) {
+
+    try {
+      ClassLoader classLoader = getClass().getClassLoader();
+      SimpleKey key = new SimpleKey(assertClass);
+      Class<V> proxyClass = (Class<V>) cache.findOrInsert(classLoader, key, () -> createProxy(assertClass, collector));
+
+      Constructor<? extends V> constructor = proxyClass.getConstructor(actualClass);
+      return constructor.newInstance(actual);
+    } catch (NoSuchMethodException | IllegalAccessException | InstantiationException | InvocationTargetException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private <V> Class<?> createProxy(Class<V> assertClass, ErrorCollector collector) {
+    Junction<MethodDescription> specialMethods = ElementMatchers.<MethodDescription> nameContainsIgnoreCase("extracting")
+                                                                .or(nameContainsIgnoreCase("filteredOn"))
+                                                                .or(nameContainsIgnoreCase("map"))
+                                                                .or(nameContainsIgnoreCase("flatMap"))
+                                                                .or(nameContainsIgnoreCase("flatExtracting"));
+
+    return new ByteBuddy().subclass(assertClass)
+                          .method(specialMethods)
+                          .intercept(MethodDelegation.to(new ProxifyExtractingResult(this)))
+                          .method(ElementMatchers.<MethodDescription> any().and(ElementMatchers.not(specialMethods)))
+                          .intercept(MethodDelegation.to(collector))
+                          .make()
+                          .load(getClass().getClassLoader())
+                          .getLoaded();
   }
 
   public boolean wasSuccess() {
     return collector.wasSuccess();
   }
 
-  private enum CollectErrorsOrCreateExtractedProxy implements CallbackFilter {
-    FILTER;
-
-    private static final int ERROR_COLLECTOR_INDEX = 0;
-    private static final int PROXIFY_RESULT_INDEX = 1;
-
-    @Override
-    public int accept(Method method) {
-      return keepProxifying(method) ? PROXIFY_RESULT_INDEX : ERROR_COLLECTOR_INDEX;
-    }
-
-    private boolean keepProxifying(Method method) {
-      return isExtractingMethod(method)
-             || isFilteredOnMethod(method)
-             || isOptionalAssertFlatMap(method)
-             || isOptionalAssertMap(method);
-    }
-
-    private boolean isExtractingMethod(Method method) {
-      return method.getName().toLowerCase().contains("extracting");
-    }
-
-    private boolean isFilteredOnMethod(Method method) {
-      return method.getName().contains("filteredOn");
-    }
-
-    private boolean isOptionalAssertMap(Method method) {
-      return method.getDeclaringClass().equals(AbstractOptionalAssert.class) && method.getName().contains("map");
-    }
-
-    private boolean isOptionalAssertFlatMap(Method method) {
-      return method.getDeclaringClass().equals(AbstractOptionalAssert.class) && method.getName().contains("flatMap");
-    }
-  }
 }
