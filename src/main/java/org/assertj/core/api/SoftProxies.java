@@ -12,7 +12,7 @@
  */
 package org.assertj.core.api;
 
-import static net.bytebuddy.matcher.ElementMatchers.nameContainsIgnoreCase;
+import static net.bytebuddy.matcher.ElementMatchers.named;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -55,16 +55,32 @@ class SoftProxies {
     }
   }
 
+  Object createIterableSizeAssertProxy(IterableSizeAssert<?> iterableSizeAssert) {
+    Class<?> proxyClass = createProxy(IterableSizeAssert.class, collector);
+    try {
+      Constructor<?> constructor = proxyClass.getConstructor(AbstractIterableAssert.class, Integer.class);
+      return constructor.newInstance(iterableSizeAssert.returnToIterable(), iterableSizeAssert.actual);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private <V> Class<?> createProxy(Class<V> assertClass, ErrorCollector collector) {
-    Junction<MethodDescription> specialMethods = ElementMatchers.<MethodDescription> nameContainsIgnoreCase("extracting")
-                                                                .or(nameContainsIgnoreCase("filteredOn"))
-                                                                .or(nameContainsIgnoreCase("map"))
-                                                                .or(nameContainsIgnoreCase("flatMap"))
-                                                                .or(nameContainsIgnoreCase("flatExtracting"));
+    Junction<MethodDescription> specialMethods = ElementMatchers.<MethodDescription> named("extracting")
+                                                                .or(named("filteredOn"))
+                                                                .or(named("filteredOnNull"))
+                                                                .or(named("map"))
+                                                                .or(named("asString"))
+                                                                .or(named("asList"))
+                                                                .or(named("size"))
+                                                                .or(named("toAssert"))
+                                                                .or(named("flatMap"))
+                                                                .or(named("extractingResultOf"))
+                                                                .or(named("flatExtracting"));
 
     return new ByteBuddy().subclass(assertClass)
                           .method(specialMethods)
-                          .intercept(MethodDelegation.to(new ProxifyExtractingResult(this)))
+                          .intercept(MethodDelegation.to(new ProxifyMethodChangingTheObjectUnderTest(this)))
                           .method(ElementMatchers.<MethodDescription> any().and(ElementMatchers.not(specialMethods)))
                           .intercept(MethodDelegation.to(collector))
                           .make()
@@ -74,6 +90,16 @@ class SoftProxies {
 
   public boolean wasSuccess() {
     return collector.wasSuccess();
+  }
+
+  public Object createMapSizeAssertProxy(MapSizeAssert<?, ?> mapSizeAssert) {
+    Class<?> proxyClass = createProxy(MapSizeAssert.class, collector);
+    try {
+      Constructor<?> constructor = proxyClass.getConstructor(AbstractMapAssert.class, Integer.class);
+      return constructor.newInstance(mapSizeAssert.returnToMap(), mapSizeAssert.actual);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
 }

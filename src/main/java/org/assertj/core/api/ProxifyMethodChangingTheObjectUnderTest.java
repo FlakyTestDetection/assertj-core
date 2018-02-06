@@ -18,17 +18,18 @@ import java.lang.reflect.Array;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 
-public class ProxifyExtractingResult {
+public class ProxifyMethodChangingTheObjectUnderTest {
 
   private final SoftProxies proxies;
 
-  ProxifyExtractingResult(SoftProxies proxies) {
+  ProxifyMethodChangingTheObjectUnderTest(SoftProxies proxies) {
     this.proxies = proxies;
   }
 
@@ -37,6 +38,16 @@ public class ProxifyExtractingResult {
   public Object intercept(@SuperCall Callable<Object> proxy) throws Exception {
 
     Object result = proxy.call();
+    if (result instanceof IterableSizeAssert) {
+      IterableSizeAssert<?> iterableSizeAssert = (IterableSizeAssert<?>) result;
+      // can' use the usual way of building soft proxy since IterableSizeAssert takes 2 parameters
+      return proxies.createIterableSizeAssertProxy(iterableSizeAssert);
+    }
+    if (result instanceof MapSizeAssert) {
+      MapSizeAssert<?, ?> iterableSizeAssert = (MapSizeAssert<?, ?>) result;
+      // can' use the usual way of building soft proxy since IterableSizeAssert takes 2 parameters
+      return proxies.createMapSizeAssertProxy(iterableSizeAssert);
+    }
     return proxies.create(result.getClass(), actualClass(result), actual(result));
   }
 
@@ -47,6 +58,12 @@ public class ProxifyExtractingResult {
     }
     if (result instanceof OptionalAssert) {
       return Optional.class;
+    }
+    if (result instanceof ObjectAssert) {
+      return Object.class;
+    }
+    if (result instanceof MapAssert) {
+      return Map.class;
     }
 
     // Trying to create a proxy will only match exact constructor argument types.
